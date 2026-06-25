@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: rental-ecosystem-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --loglevel warning
+    volumes:
+      - redis_data:/data
+    networks:
+      - rental-network
+
+volumes:
+  redis_data:
+    driver: local
+
+networks:
+  rental-network:
+    driver: bridge

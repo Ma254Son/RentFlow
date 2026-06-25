@@ -9,8 +9,7 @@ rental-ecosystem/
 │
 ├── apps/
 │   ├── mobile-tenant/              # React Native (Expo)
-│   ├── web-landlord/               # React / Next.js
-│   ├── web-agent/                  # React / Next.js
+│   ├── web-portal/                 # React / Next.js # uses role permissions
 │   └── web-admin/                  # Admin dashboard
 │
 ├── backend/

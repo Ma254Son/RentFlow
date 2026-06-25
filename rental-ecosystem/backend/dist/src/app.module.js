@@ -18,6 +18,10 @@ const tenancy_module_1 = require("./modules/tenancy/tenancy.module");
 const maintenance_module_1 = require("./modules/maintenance/maintenance.module");
 const messaging_module_1 = require("./modules/messaging/messaging.module");
 const admin_module_1 = require("./modules/admin/admin.module");
+const home_id_module_1 = require("./modules/home-id/home-id.module");
+const audit_module_1 = require("./modules/audit/audit.module");
+const users_module_1 = require("./modules/users/users.module");
+const redis_module_1 = require("./common/redis/redis.module");
 const core_1 = require("@nestjs/core");
 const jwt_auth_guard_1 = require("./common/guards/jwt-auth.guard");
 const roles_guard_1 = require("./common/guards/roles.guard");
@@ -37,6 +41,7 @@ exports.AppModule = AppModule = __decorate([
                     limit: 100,
                 }]),
             prisma_module_1.PrismaModule,
+            redis_module_1.RedisModule,
             auth_module_1.AuthModule,
             properties_module_1.PropertiesModule,
             requests_module_1.RequestsModule,
@@ -44,6 +49,9 @@ exports.AppModule = AppModule = __decorate([
             maintenance_module_1.MaintenanceModule,
             messaging_module_1.MessagingModule,
             admin_module_1.AdminModule,
+            home_id_module_1.HomeIdModule,
+            audit_module_1.AuditModule,
+            users_module_1.UsersModule,
         ],
         providers: [
             {

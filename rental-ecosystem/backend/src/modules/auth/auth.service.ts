@@ -5,22 +5,22 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
-import { PrismaService } from '../../prisma/prisma.service';
+import { PrismaService } from '../../../prisma/prisma.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { VerifyPhoneDto } from './dto/verify-phone.dto';
-import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private configService: ConfigService,
   ) {}
 
   async register(dto: RegisterDto) {
-    // Check if phone number already exists
     const existingPhone = await this.prisma.user.findUnique({
       where: { phoneNumber: dto.phoneNumber },
     });
@@ -28,7 +28,6 @@ export class AuthService {
       throw new ConflictException('Phone number already registered');
     }
 
-    // Check if email already exists (if provided)
     if (dto.email) {
       const existingEmail = await this.prisma.user.findUnique({
         where: { email: dto.email },
@@ -38,11 +37,10 @@ export class AuthService {
       }
     }
 
-    // Hash password
-    const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS, 10) || 10;
+    // ✅ ConfigService.get<T>() returns T instead of string | undefined
+    const saltRounds = this.configService.get<number>('bcrypt.saltRounds', 10);
     const passwordHash = await bcrypt.hash(dto.password, saltRounds);
 
-    // Create user
     const user = await this.prisma.user.create({
       data: {
         fullName: dto.fullName,
@@ -63,15 +61,13 @@ export class AuthService {
       },
     });
 
-    // Generate OTP for phone verification
     const otpCode = this.generateOtp();
-    const otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+    const otpExpiresAt = new Date(
+      Date.now() + this.configService.get<number>('otp.expiresInMinutes', 5) * 60 * 1000,
+    );
 
-    // In production, send OTP via SMS
-    // For now, we return it in the response for testing
     console.log(`OTP for ${dto.phoneNumber}: ${otpCode}`);
 
-    // Create audit log
     await this.prisma.auditLog.create({
       data: {
         userId: user.id,
@@ -85,7 +81,7 @@ export class AuthService {
     return {
       message: 'Registration successful. Please verify your phone number.',
       user,
-      otp: otpCode, // Remove in production
+      otp: otpCode,
       otpExpiresAt,
     };
   }
@@ -110,7 +106,6 @@ export class AuthService {
 
     const tokens = await this.generateTokens(user.id, user.role);
 
-    // Create audit log
     await this.prisma.auditLog.create({
       data: {
         userId: user.id,
@@ -147,8 +142,6 @@ export class AuthService {
       throw new BadRequestException('Phone already verified');
     }
 
-    // In production, verify OTP from Redis/SMS provider
-    // For now, accept any 6-digit code for testing
     if (dto.otpCode.length !== 6) {
       throw new BadRequestException('Invalid OTP code');
     }
@@ -158,7 +151,6 @@ export class AuthService {
       data: { isVerified: true },
     });
 
-    // Create audit log
     await this.prisma.auditLog.create({
       data: {
         userId: user.id,
@@ -198,11 +190,12 @@ export class AuthService {
     const payload = { sub: userId, role };
 
     const accessToken = this.jwtService.sign(payload, {
-      expiresIn: process.env.JWT_EXPIRES_IN || '15m',
+      // ✅ get<string>() with a default eliminates string | undefined
+      expiresIn: this.configService.get<string>('jwt.expiresIn', '15m'),
     });
 
     const refreshToken = this.jwtService.sign(payload, {
-      expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
+      expiresIn: this.configService.get<string>('jwt.refreshExpiresIn', '7d'),
     });
 
     return { accessToken, refreshToken };

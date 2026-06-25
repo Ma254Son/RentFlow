@@ -4,7 +4,7 @@ import {
   BadRequestException,
   ForbiddenException,
 } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
+import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateRequestDto } from './dto/create-request.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 
